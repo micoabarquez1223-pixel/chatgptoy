@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CrushGPT</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: #212121;
+  font-family: Arial, sans-serif;
+  color: #ececec;
+}
+
+.app {
+  width: 100%;
+  max-width: 780px;
+  height: 100vh;
+  margin: auto;
+  background: #212121;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  height: 58px;
+  padding: 0 22px;
+  display: flex;
+  align-items: center;
+  font-size: 19px;
+  font-weight: 700;
+  border-bottom: 1px solid #2f2f2f;
+}
+
+.logo {
+  width: 34px;
+  height: 34px;
+  margin-right: 12px;
+  border-radius: 50%;
+  background: #10a37f;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.commands {
+  width: 92%;
+  max-width: 680px;
+  margin: 18px auto 8px;
+  background: #2f2f2f;
+  border: 1px solid #3f3f3f;
+  border-radius: 16px;
+  padding: 16px 18px;
+  color: #d6d6d6;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.commands span {
+  color: #8ee6a7;
+  font-family: monospace;
+  font-weight: bold;
+  background: rgba(16, 163, 127, 0.15);
+  padding: 3px 7px;
+  border-radius: 7px;
+}
+
+.chat {
+  flex: 1;
+  padding: 18px 0;
+  overflow-y: auto;
+}
+
+.message {
+  width: 92%;
+  max-width: 680px;
+  margin: 0 auto 22px;
+  display: flex;
+  gap: 14px;
+  line-height: 1.55;
+  animation: fadeUp 0.25s ease;
+}
+
+.avatar {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+.bot .avatar {
+  background: #10a37f;
+}
+
+.user .avatar {
+  background: #676767;
+}
+
+.bubble {
+  flex: 1;
+  padding-top: 5px;
+}
+
+.reply-img {
+  width: 100%;
+  max-width: 330px;
+  border-radius: 16px;
+  margin-top: 14px;
+  display: block;
+  border: 1px solid #444;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.gallery {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.gallery .reply-img {
+  width: calc(50% - 5px);
+  max-width: none;
+  margin-top: 0;
+}
+
+.input-area {
+  width: 92%;
+  max-width: 680px;
+  margin: 0 auto 22px;
+  padding: 10px;
+  background: #2f2f2f;
+  border: 1px solid #444;
+  border-radius: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: white;
+  font-size: 15px;
+  padding: 12px;
+}
+
+input::placeholder {
+  color: #aaa;
+}
+
+button {
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 12px;
+  background: white;
+  color: #111;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.typing-text {
+  color: #aaa;
+  font-style: italic;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .commands,
+  .message,
+  .input-area {
+    width: 94%;
+  }
+
+  .gallery .reply-img {
+    width: 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+    <audio id="replySound" src="sound.wav"></audio>
+
+<div class="app">
+  <div class="header">
+    <div class="logo">✦</div>
+    CrushGPT
+  </div>
+
+  <div class="commands">
+    <b>Available commands only:</b><br>
+    <span>/pretty</span> — run beauty scan<br>
+    <span>/crush</span> — reveal secret answer<br>
+    <span>/date</span> — calculate chance<br>
+    <span>/smile</span> — analyze smile impact
+  </div>
+
+  <div class="chat" id="chat">
+    <div class="message bot">
+      <div class="avatar">AI</div>
+      <div class="bubble">
+        Hi, I’m CrushGPT. I only answer very important questions about one person.
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <input id="input" placeholder="Message CrushGPT..." />
+    <button onclick="sendMessage()">↑</button>
+  </div>
+</div>
+
+<script>
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+const replySound = document.getElementById("replySound");
+
+function startReplySound() {
+  replySound.currentTime = 0;
+  replySound.play().catch(() => {});
+}
+
+function stopReplySound() {
+  replySound.pause();
+  replySound.currentTime = 0;
+}
+
+const replies = {
+  "/pretty": {
+    text: "Scanning... Hmmm... Okay damn... dangerously pretty. Even my system almost crashed.",
+    img: "damn.jpg"
+  },
+  "/crush": {
+    text: "Secret answer found: yes, someone definitely has a crush on you. Against company policy, I have identified the alien. It's this dude. To be fair, he does look suspiciously handsome holding that book.",
+    imgs: ["mic1.jpg", "mic2.jpg"]
+  },
+  "/date": {
+    text: "Analyzing success rate... Honestly, if that smile doesn't work, I'm blaming the universe.",
+    img: "damn3.jpg"
+  },
+  "/smile": {
+    text: "Smile analysis complete: unfair, distracting, and probably illegal in 14 countries.",
+    img: "damn2.jpg"
+  }
+};
+
+function addMessage(text, type) {
+  const msg = document.createElement("div");
+  msg.className = `message ${type}`;
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = type === "user" ? "You" : "AI";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text;
+
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
+
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function addBotReply(text, images) {
+  const msg = document.createElement("div");
+  msg.className = "message bot";
+
+  const avatar = document.createElement("div");
+  avatar.className = "avatar";
+  avatar.textContent = "AI";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+
+  const line = document.createElement("div");
+  bubble.appendChild(line);
+
+  msg.appendChild(avatar);
+  msg.appendChild(bubble);
+  chat.appendChild(msg);
+  chat.scrollTop = chat.scrollHeight;
+
+  let i = 0;
+
+  startReplySound();
+
+  const typing = setInterval(() => {
+    line.textContent += text.charAt(i);
+    i++;
+
+    if (i >= text.length) {
+      clearInterval(typing);
+
+      if (Array.isArray(images)) {
+        const gallery = document.createElement("div");
+        gallery.className = "gallery";
+
+        images.forEach(src => {
+          const img = document.createElement("img");
+          img.src = src;
+          img.className = "reply-img";
+          gallery.appendChild(img);
+        });
+
+        bubble.appendChild(gallery);
+      } else if (images) {
+        const img = document.createElement("img");
+        img.src = images;
+        img.className = "reply-img";
+        bubble.appendChild(img);
+      }
+
+      chat.scrollTop = chat.scrollHeight;
+
+      setTimeout(() => {
+        stopReplySound();
+      }, 300);
+    }
+  }, 35);
+}
+
+function sendMessage() {
+  const command = input.value.trim().toLowerCase();
+  if (!command) return;
+
+  addMessage(command, "user");
+  input.value = "";
+
+  const typingMsg = document.createElement("div");
+  typingMsg.className = "message bot";
+  typingMsg.innerHTML = `
+    <div class="avatar">AI</div>
+    <div class="bubble typing-text">CrushGPT is thinking...</div>
+  `;
+
+  chat.appendChild(typingMsg);
+  chat.scrollTop = chat.scrollHeight;
+
+  setTimeout(() => {
+    typingMsg.remove();
+
+    if (replies[command]) {
+      addBotReply(
+        replies[command].text,
+        replies[command].imgs || replies[command].img
+      );
+    } else {
+      addMessage(
+        "Invalid command. Please use only the available commands above. I’m not smart, I’m just romantic.",
+        "bot"
+      );
+    }
+  }, 900);
+}
+
+input.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") {
+    sendMessage();
+  }
+});
+</script>
+
+</body>
+</html>
